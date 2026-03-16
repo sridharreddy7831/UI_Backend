@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uthsav Invitations - API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #D4AF37 0%, #b8940e 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        nav {
+            background: #f5f5f5;
+            padding: 20px;
+            border-bottom: 2px solid #D4AF37;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        nav a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            background: #D4AF37;
+            color: white;
+        }
+
+        main {
+            padding: 40px;
+        }
+
+        section {
+            margin-bottom: 50px;
+        }
+
+        h2 {
+            color: #667eea;
+            border-bottom: 3px solid #D4AF37;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        h3 {
+            color: #764ba2;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .endpoint {
+            background: #f9f9f9;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .method {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 10px;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .get { background: #44c1e8; }
+        .post { background: #28a745; }
+        .put { background: #ffc107; color: #333; }
+        .delete { background: #dc3545; }
+        .patch { background: #17a2b8; }
+
+        .path {
+            display: inline-block;
+            background: #333;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin-left: 10px;
+        }
+
+        .protected {
+            display: inline-block;
+            background: #dc3545;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        .params, .headers, .response {
+            margin: 15px 0;
+        }
+
+        .params h4, .headers h4, .response h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            background: white;
+        }
+
+        table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .example {
+            margin: 15px 0;
+        }
+
+        .example h5 {
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #667eea; }
+
+        footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 2px solid #D4AF37;
+            margin-top: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+
+        .badge-required { background: #dc3545; color: white; }
+        .badge-optional { background: #6c757d; color: white; }
+
+        .toc {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .auth-note strong {
+            color: #856404;
+        }
+
+        .success-response { background: #d4edda; border-left-color: #28a745; }
+        .error-response { background: #f8d7da; border-left-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎉 Uthsav Invitations</h1>
+            <p>API Documentation - v1.0</p>
+        </header>
+
+        <nav>
+            <a href="#overview">Overview</a>
+            <a href="#authentication">Authentication</a>
+            <a href="#health">Health Check</a>
+            <a href="#auth">Auth Routes</a>
+            <a href="#testimonials">Testimonials</a>
+            <a href="#messages">Messages</a>
+            <a href="#showcases">Showcases</a>
+        </nav>
+
+        <main>
+            <!-- OVERVIEW SECTION -->
+            <section id="overview">
+                <h2>📋 Overview</h2>
+                <p>The Uthsav Invitations API provides endpoints for managing authentication, testimonials, contact messages, and showcase items.</p>
+                
+                <div style="background: #f0f0f0; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #333;">Base URL</h3>
+                    <div class="code-block">http://localhost:4000
+https://uthsav-api.herokuapp.com (Production)</div>
+                </div>
+
+                <div class="toc">
+                    <h3>Quick Navigation</h3>
+                    <ul>
+                        <li>📍 <a href="#health-root">GET /</a> - Health Check (Root)</li>
+                        <li>🏥 <a href="#health-api">GET /api/health</a> - Health Check with DB Status</li>
+                        <li>🔐 <a href="#login">POST /api/auth/login</a> - Admin Login</li>
+                        <li>👤 <a href="#auth-me">GET /api/auth/me</a> - Get Current Admin Info</li>
+                        <li>⭐ <a href="#get-testimonials">GET /api/testimonials</a> - Get All Testimonials</li>
+                        <li>➕ <a href="#create-testimonial">POST /api/testimonials</a> - Create Testimonial</li>
+                        <li>💬 <a href="#submit-message">POST /api/messages</a> - Submit Contact Message</li>
+                        <li>🎨 <a href="#get-showcases">GET /api/showcases/:category</a> - Get Showcases by Category</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- AUTHENTICATION SECTION -->
+            <section id="authentication">
+                <h2>🔐 Authentication</h2>
+                <p>Protected endpoints require a JWT token passed in the Authorization header.</p>
+                
+                <h3>How to Authenticate</h3>
+                <p>1. Login using <span class="path">/api/auth/login</span> to receive a token</p>
+                <p>2. Include the token in all protected requests:</p>
+                <div class="code-block">Authorization: Bearer YOUR_TOKEN_HERE</div>
+
+                <div class="auth-note">
+                    <strong>⚠️ Note:</strong> Tokens are valid for 7 days. After expiration, you'll need to login again.
+                </div>
+            </section>
+
+            <!-- HEALTH CHECK SECTION -->
+            <section id="health">
+                <h2>🏥 Health Check Endpoints</h2>
+
+                <!-- GET / -->
+                <div class="endpoint">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method get">GET</span>
+                        <span class="path">/</span>
+                    </div>
+                    <p><strong>Description:</strong> Check if the backend server is running</p>
+                    <p><strong>Authentication:</strong> Not required</p>
+
+                    <div class="example">
+                        <h5>✅ Success Response (200)</h5>
+                        <div class="code-block">Backend is running successfully</div>
+                    </div>
+                </div>
+
+                <!-- GET /api/health -->
+                <div class="endpoint">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/health</span>
+                    </div>
+                    <p><strong>Description:</strong> Detailed health check including database connection status</p>
+                    <p><strong>Authentication:</strong> Not required</p>
+
+                    <div class="example">
+                        <h5>✅ Success Response (200)</h5>
+                        <div class="code-block">{
+  "status": "ok",
+  "db": "connected"
+}</div>
+                    </div>
+
+                    <div class="example">
+                        <h5>Example with disconnected DB</h5>
+                        <div class="code-block">{
+  "status": "ok",
+  "db": "disconnected"
+}</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AUTH ROUTES SECTION -->
+            <section id="auth">
+                <h2>🔐 Authentication Routes</h2>
+
+                <!-- POST /api/auth/login -->
+                <div class="endpoint" id="login">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/auth/login</span>
+                    </div>
+                    <p><strong>Description:</strong> Authenticate admin user and receive JWT token</p>
+                    <p><strong>Authentication:</strong> Not required</p>
+
+                    <div class="params">
+                        <h4>Request Body Parameters</h4>
+                        <table>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <tr>
+                                <td>email</td>
+                                <td>String</td>
+                                <td>Admin email address</td>
+                            </tr>
+                            <tr>
+                                <td>password</td>
+                                <td>String</td>
+                                <td>Admin password</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="example">
+                        <h5>Request Example</h5>
+                        <div class="code-block">POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@uthsav.com",
+  "password": "uthsav2024"
+}</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="success">✅ Success Response (200)</h5>
+                        <div class="code-block">{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "admin": {
+    "id": "67a1b2c3d4e5f6g7h8i9j0k1",
+    "email": "admin@uthsav.com",
+    "name": "Uthsav Admin"
+  }
+}</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="error">❌ Error Response (401)</h5>
+                        <div class="code-block">{
+  "error": "Invalid email or password"
+}</div>
+                    </div>
+                </div>
+
+                <!-- GET /api/auth/me -->
+                <div class="endpoint" id="auth-me">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/auth/me</span>
+                        <span class="protected">PROTECTED</span>
+                    </div>
+                    <p><strong>Description:</strong> Get current authenticated admin's information</p>
+                    <p><strong>Authentication:</strong> Required (JWT Token)</p>
+
+                    <div class="headers">
+                        <h4>Required Headers</h4>
+                        <table>
+                            <th>Header</th>
+                            <th>Value</th>
+                            <tr>
+                                <td>Authorization</td>
+                                <td>Bearer {token}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="example">
+                        <h5>Request Example</h5>
+                        <div class="code-block">GET /api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="success">✅ Success Response (200)</h5>
+                        <div class="code-block">{
+  "admin": {
+    "_id": "67a1b2c3d4e5f6g7h8i9j0k1",
+    "name": "Uthsav Admin",
+    "email": "admin@uthsav.com",
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+}</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="error">❌ Error Response (401)</h5>
+                        <div class="code-block">{
+  "error": "Unauthorized — invalid or expired token"
+}</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TESTIMONIALS SECTION -->
+            <section id="testimonials">
+                <h2>⭐ Testimonials Routes</h2>
+
+                <!-- GET /api/testimonials -->
+                <div class="endpoint" id="get-testimonials">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/testimonials</span>
+                    </div>
+                    <p><strong>Description:</strong> Retrieve all testimonials (public endpoint)</p>
+                    <p><strong>Authentication:</strong> Not required</p>
+
+                    <div class="example">
+                        <h5>Request Example</h5>
+                        <div class="code-block">GET /api/testimonials</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="success">✅ Success Response (200)</h5>
+                        <div class="code-block">[
+  {
+    "_id": "67a1b2c3d4e5f6g7h8i9j0k1",
+    "name": "Priya & Arjun",
+    "occasion": "Wedding Invitation",
+    "rating": 5,
+    "description": "Uthsav captured the essence of our wedding perfectly...",
+    "avatarUrl": "https://images.unsplash.com/...",
+    "emoji": "💍",
+    "order": 0,
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  },
+  {...}
+]</div>
+                    </div>
+                </div>
+
+                <!-- POST /api/testimonials -->
+                <div class="endpoint" id="create-testimonial">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/testimonials</span>
+                        <span class="protected">PROTECTED</span>
+                    </div>
+                    <p><strong>Description:</strong> Create a new testimonial (admin only)</p>
+                    <p><strong>Authentication:</strong> Required (JWT Token)</p>
+
+                    <div class="params">
+                        <h4>Request Body Parameters</h4>
+                        <table>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <tr>
+                                <td>name</td>
+                                <td>String</td>
+                                <td>Testimonial author name</td>
+                            </tr>
+                            <tr>
+                                <td>occasion</td>
+                                <td>String</td>
+                                <td>Type of event (e.g., "Wedding Invitation")</td>
+                            </tr>
+                            <tr>
+                                <td>rating</td>
+                                <td>Number</td>
+                                <td>Rating between 1-5</td>
+                            </tr>
+                            <tr>
+                                <td>description</td>
+                                <td>String</td>
+                                <td>Testimonial text</td>
+                            </tr>
+                            <tr>
+                                <td>avatarUrl</td>
+                                <td>String</td>
+                                <td>Avatar image URL</td>
+                            </tr>
+                            <tr>
+                                <td>emoji</td>
+                                <td>String</td>
+                                <td>Emoji representation</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="example">
+                        <h5>Request Example</h5>
+                        <div class="code-block">POST /api/testimonials
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "name": "Meena Krishnan",
+  "occasion": "Baby Shower Invitation",
+  "rating": 5,
+  "description": "The baby shower invitation was stunning!",
+  "avatarUrl": "https://images.unsplash.com/...",
+  "emoji": "🍼"
+}</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="success">✅ Success Response (201)</h5>
+                        <div class="code-block">{
+  "_id": "67a1b2c3d4e5f6g7h8i9j0k2",
+  "name": "Meena Krishnan",
+  "occasion": "Baby Shower Invitation",
+  "rating": 5,
+  "description": "The baby shower invitation was stunning!",
+  "avatarUrl": "https://images.unsplash.com/...",
+  "emoji": "🍼",
+  "order": 4,
+  "createdAt": "2024-01-16T10:30:00.000Z"
+}</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MESSAGES SECTION -->
+            <section id="messages">
+                <h2>💬 Contact Messages Routes</h2>
+
+                <!-- POST /api/messages -->
+                <div class="endpoint" id="submit-message">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/messages</span>
+                    </div>
+                    <p><strong>Description:</strong> Submit a contact/inquiry message from the website (public endpoint)</p>
+                    <p><strong>Authentication:</strong> Not required</p>
+
+                    <div class="params">
+                        <h4>Request Body Parameters</h4>
+                        <table>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <tr>
+                                <td>name</td>
+                                <td>String</td>
+                                <td>Customer name</td>
+                            </tr>
+                            <tr>
+                                <td>phone</td>
+                                <td>String</td>
+                                <td>Contact phone number</td>
+                            </tr>
+                            <tr>
+                                <td>eventType</td>
+                                <td>String</td>
+                                <td>Type of event (wedding, baby shower, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td>eventDate</td>
+                                <td>String (Date)</td>
+                                <td>Planned event date</td>
+                            </tr>
+                            <tr>
+                                <td>message</td>
+                                <td>String</td>
+                                <td>Customer message/inquiry</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="example">
+                        <h5>Request Example</h5>
+                        <div class="code-block">POST /api/messages
+Content-Type: application/json
+
+{
+  "name": "Rajesh Kumar",
+  "phone": "+91-9876543210",
+  "eventType": "Wedding",
+  "eventDate": "2024-06-15",
+  "message": "Hi, I'm interested in booking digital wedding invitations. Please contact me."
+}</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="success">✅ Success Response (201)</h5>
+                        <div class="code-block">{
+  "_id": "67a1b2c3d4e5f6g7h8i9j0k3",
+  "name": "Rajesh Kumar",
+  "phone": "+91-9876543210",
+  "eventType": "Wedding",
+  "eventDate": "2024-06-15T00:00:00.000Z",
+  "message": "Hi, I'm interested in booking...",
+  "read": false,
+  "createdAt": "2024-01-16T12:45:00.000Z"
+}</div>
+                    </div>
+
+                    <div class="auth-note" style="background: #d1ecf1; border-left-color: #17a2b8;">
+                        <strong>📧 Note:</strong> An email alert will be sent to the admin if SMTP is configured
+                    </div>
+                </div>
+            </section>
+
+            <!-- SHOWCASES SECTION -->
+            <section id="showcases">
+                <h2>🎨 Showcases Routes</h2>
+
+                <!-- GET /api/showcases/:category -->
+                <div class="endpoint" id="get-showcases">
+                    <div style="margin-bottom: 15px;">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/showcases/:category</span>
+                    </div>
+                    <p><strong>Description:</strong> Get showcase items by category (public endpoint)</p>
+                    <p><strong>Authentication:</strong> Not required</p>
+
+                    <div class="params">
+                        <h4>URL Parameters</h4>
+                        <table>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <tr>
+                                <td>category</td>
+                                <td>String</td>
+                                <td>Category name (e.g., "wedding-invitations", "baby-shower-invitations", "housewarming-invitations", "birthday-invitations", "engagement-invitations")</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="example">
+                        <h5>Request Example</h5>
+                        <div class="code-block">GET /api/showcases/wedding-invitations</div>
+                    </div>
+
+                    <div class="example">
+                        <h5 class="success">✅ Success Response (200)</h5>
+                        <div class="code-block">[
+  {
+    "_id": "67a1b2c3d4e5f6g7h8i9j0k4",
+    "category": "wedding-invitations",
+    "name": "Anjali & Vikram",
+    "description": "A royal Rajasthani wedding theme with intricate mandap designs and 3D walkthroughs.",
+    "image": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622",
+    "order": 0,
+    "createdAt": "2024-01-10T08:00:00.000Z"
+  },
+  {...}
+]</div>
+                    </div>
+
+                    <div class="example">
+                        <h5>Available Categories</h5>
+                        <ul>
+                            <li><strong>wedding-invitations</strong> - Digital wedding invitation showcases</li>
+                            <li><strong>baby-shower-invitations</strong> - Baby shower invitation designs</li>
+                            <li><strong>housewarming-invitations</strong> - Housewarming ceremony invitations</li>
+                            <li><strong>birthday-invitations</strong> - Birthday party invitations</li>
+                            <li><strong>engagement-invitations</strong> - Engagement party invitations</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ERROR CODES SECTION -->
+            <section>
+                <h2>⚠️ Error Responses</h2>
+                <p>The API uses standard HTTP status codes to indicate the success or failure of requests:</p>
+                
+                <table>
+                    <tr>
+                        <th style="width: 100px;">Status Code</th>
+                        <th>Meaning</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><strong style="color: #28a745;">200</strong></td>
+                        <td>OK - Request successful</td>
+                        <td>Data retrieved successfully</td>
+                    </tr>
+                    <tr>
+                        <td><strong style="color: #28a745;">201</strong></td>
+                        <td>Created - Resource created successfully</td>
+                        <td>New testimonial created</td>
+                    </tr>
+                    <tr>
+                        <td><strong style="color: #ffc107;">400</strong></td>
+                        <td>Bad Request - Invalid parameters</td>
+                        <td>Missing required fields</td>
+                    </tr>
+                    <tr>
+                        <td><strong style="color: #dc3545;">401</strong></td>
+                        <td>Unauthorized - Authentication required</td>
+                        <td>Invalid or expired token</td>
+                    </tr>
+                    <tr>
+                        <td><strong style="color: #dc3545;">404</strong></td>
+                        <td>Not Found - Resource doesn't exist</td>
+                        <td>Testimonial with ID not found</td>
+                    </tr>
+                    <tr>
+                        <td><strong style="color: #dc3545;">500</strong></td>
+                        <td>Server Error - Internal server error</td>
+                        <td>Database connection error</td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- ENVIRONMENT VARIABLES SECTION -->
+            <section>
+                <h2>⚙️ Environment Variables</h2>
+                <p>The backend requires the following environment variables to be set in a <code>.env</code> file:</p>
+
+                <table>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                    <tr>
+                        <td><strong>PORT</strong></td>
+                        <td>Server port</td>
+                        <td>4000</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MONGO_URI</strong></td>
+                        <td>MongoDB connection string</td>
+                        <td>mongodb+srv://user:pass@cluster.mongodb.net/uthsav_invites</td>
+                    </tr>
+                    <tr>
+                        <td><strong>JWT_SECRET</strong></td>
+                        <td>Secret key for JWT signing</td>
+                        <td>your_secret_key_here</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ALLOWED_ORIGINS</strong></td>
+                        <td>CORS allowed origins</td>
+                        <td>http://localhost:5173,https://uthsavinvites.vercel.app</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SMTP_HOST</strong></td>
+                        <td>Email service host</td>
+                        <td>smtp.gmail.com</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SMTP_PORT</strong></td>
+                        <td>Email service port</td>
+                        <td>465</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SMTP_USER</strong></td>
+                        <td>Email service username</td>
+                        <td>your-email@gmail.com</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SMTP_PASS</strong></td>
+                        <td>Email service password / app password</td>
+                        <td>your_app_password</td>
+                    </tr>
+                    <tr>
+                        <td><strong>NOTIFICATION_EMAIL</strong></td>
+                        <td>Email to receive inquiry alerts</td>
+                        <td>admin@uthsav.com</td>
+                    </tr>
+                    <tr>
+                        <td><strong>FRONTEND_URL</strong></td>
+                        <td>Frontend application URL</td>
+                        <td>http://localhost:5173</td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- TESTING SECTION -->
+            <section>
+                <h2>🧪 Testing the API</h2>
+                <p>You can test the API using tools like <strong>Postman</strong>, <strong>Thunder Client</strong>, or <strong>cURL</strong>.</p>
+
+                <h3>cURL Examples</h3>
+
+                <h4>1. Health Check</h4>
+                <div class="code-block">curl http://localhost:4000/</div>
+
+                <h4>2. Login</h4>
+                <div class="code-block">curl -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@uthsav.com",
+    "password": "uthsav2024"
+  }'</div>
+
+                <h4>3. Get Testimonials</h4>
+                <div class="code-block">curl http://localhost:4000/api/testimonials</div>
+
+                <h4>4. Get Showcases</h4>
+                <div class="code-block">curl http://localhost:4000/api/showcases/wedding-invitations</div>
+
+                <h4>5. Submit Message</h4>
+                <div class="code-block">curl -X POST http://localhost:4000/api/messages \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "phone": "+91-9876543210",
+    "eventType": "Wedding",
+    "eventDate": "2024-06-15",
+    "message": "Interested in booking"
+  }'</div>
+            </section>
+
+            <footer>
+                <p>&copy; 2024 Uthsav Invitations. API Documentation v1.0</p>
+                <p style="margin-top: 10px; font-size: 0.9em;">Last Updated: March 16, 2024</p>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>
