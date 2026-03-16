@@ -37,24 +37,44 @@ app.use(helmet());
 // CORS CONFIGURATION
 // ─────────────────────────────────────────────────────────
 
+// 🔒 SECURITY: Build allowed origins from environment or defaults
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ["http://localhost:5173", "https://uthsavinvites.vercel.app"];
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://uthsavinvites.vercel.app"
+    ];
+
+console.log(`🌐 CORS Allowed Origins: ${allowedOrigins.join(', ')}`);
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin && process.env.NODE_ENV === 'development') {
+    // Allow requests with no origin in development (mobile apps, curl, Postman)
+    if (!origin) {
+      if (process.env.NODE_ENV === 'development') {
+        return callback(null, true);
+      }
+      // In production, log and reject requests without origin
+      console.warn('⚠️ Request rejected: No origin header (possible CORS issue)');
+      return callback(new Error('CORS not allowed - origin required'));
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    if (origin && allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('CORS not allowed'));
+    
+    // 🔒 SECURITY: Log rejected origins for debugging
+    console.warn(`⚠️ CORS rejected origin: ${origin}`);
+    console.warn(`ℹ️ Allowed origins: ${allowedOrigins.join(', ')}`);
+    return callback(new Error(`CORS not allowed for origin: ${origin}`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  maxAge: 3600
+  maxAge: 3600,
+  preflightContinue: false
 }));
 
 app.use(express.json({ limit: '10mb' }));
