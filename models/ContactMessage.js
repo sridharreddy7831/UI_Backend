@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const ContactMessageSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
+    email: { type: String, trim: true, default: '' },
     eventType: { type: String, trim: true, default: '' },
     eventDate: { type: String, default: '' },
     message: { type: String, trim: true, default: '' },

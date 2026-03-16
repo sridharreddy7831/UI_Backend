@@ -11,6 +11,7 @@ const Testimonial = require('./models/Testimonial');
 const ContactMessage = require('./models/ContactMessage');
 const AdminUser = require('./models/AdminUser');
 const Showcase = require('./models/Showcase');
+const Category = require('./models/Category');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -112,6 +113,7 @@ const sendInquiryAlert = async (msg) => {
         <h2 style="color:#D4AF37;">🎉 New Inquiry Received!</h2>
         <p><strong>Name:</strong> ${msg.name}</p>
         <p><strong>Phone:</strong> ${msg.phone}</p>
+        <p><strong>Email:</strong> ${msg.email || 'Not provided'}</p>
         <p><strong>Event:</strong> ${msg.eventType || 'Not specified'}</p>
         <p><strong>Date:</strong> ${msg.eventDate ? new Date(msg.eventDate).toLocaleDateString() : 'TBD'}</p>
         <p><strong>Message:</strong> ${msg.message || 'No message provided.'}</p>
@@ -367,72 +369,185 @@ app.post('/api/auth/register', requireAuth, async (req, res) => {
 
 
 // ─────────────────────────────────────────────────────────
+// CATEGORY ROUTES
+// ─────────────────────────────────────────────────────────
+
+// GET all categories (public)
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await Category.find().sort({ order: 1 });
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST create category (admin)
+app.post('/api/categories', requireAuth, async (req, res) => {
+  try {
+    const count = await Category.countDocuments();
+    const category = new Category({ ...req.body, order: count });
+    await category.save();
+    res.status(201).json(category);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// PUT update category (admin)
+app.put('/api/categories/:id', requireAuth, async (req, res) => {
+  try {
+    const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json(category);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE category (admin)
+app.delete('/api/categories/:id', requireAuth, async (req, res) => {
+  try {
+    const category = await Category.findByIdAndDelete(req.params.id);
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json({ message: 'Category deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST seed default categories (admin)
+app.post('/api/categories/seed', requireAuth, async (req, res) => {
+  try {
+    const existing = await Category.countDocuments();
+    if (existing > 0) return res.status(400).json({ error: 'Categories already exist. Delete them first to re-seed.' });
+
+    const defaults = [
+      { title: 'Wedding Invitations', slug: 'wedding-invitations', image: 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800&auto=format&fit=crop&q=80', heroImage: 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=1600&auto=format&fit=crop&q=80', subtitle: 'Eternal Bonds, Divine Designs', description: 'Bespoke digital invitations that capture the luxury, tradition, and emotion of your special day.', order: 0 },
+      { title: 'Housewarming Invitations', slug: 'housewarming-invitations', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop&q=80', heroImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1600&auto=format&fit=crop&q=80', subtitle: 'New Beginnings, Warm Welcomes', description: 'Celebrate your new home with invitations that reflect comfort, style, and the joy of new beginnings.', order: 1 },
+      { title: 'Birthday Invitations', slug: 'birthday-invitations', image: 'https://images.unsplash.com/photo-1464349172961-60fb65f28450?w=800&auto=format&fit=crop&q=80', heroImage: 'https://images.unsplash.com/photo-1464349172961-60fb65f28450?w=1600&auto=format&fit=crop&q=80', subtitle: 'Joyful Celebrations, Lifetime Memories', description: 'From first birthdays to grand anniversaries, our invitations set the perfect mood.', order: 2 },
+      { title: 'Baby Shower Invitations', slug: 'baby-shower-invitations', image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=800&auto=format&fit=crop&q=80', heroImage: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=1600&auto=format&fit=crop&q=80', subtitle: 'Little Miracles, Big Joy', description: 'Soft, elegant, and heartwarming designs to announce the arrival of your little one.', order: 3 },
+      { title: 'Engagement Invitations', slug: 'engagement-invitations', image: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=800&auto=format&fit=crop&q=80', heroImage: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=1600&auto=format&fit=crop&q=80', subtitle: 'The Promise of Forever', description: 'Announce your commitment with sophisticated invitations that celebrate your unique love story.', order: 4 },
+      { title: 'Naming Ceremony', slug: 'naming-ceremony', image: 'https://images.unsplash.com/photo-1544126592-807daf21565b?w=800&auto=format&fit=crop&q=80', heroImage: 'https://images.unsplash.com/photo-1544126592-807daf21565b?w=1600&auto=format&fit=crop&q=80', subtitle: 'Blessings and Names', description: 'Divine and traditional designs for the sacred naming ceremony of your newborn.', order: 5 },
+    ];
+    const created = await Category.insertMany(defaults);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ─────────────────────────────────────────────────────────
 // TESTIMONIAL ROUTES
 // ─────────────────────────────────────────────────────────
 
 app.get('/api/testimonials', async (req, res) => {
-
   try {
-
     const testimonials = await Testimonial.find().sort({ order: 1 });
-
     res.json(testimonials);
-
   } catch (err) {
-
     res.status(500).json({ error: err.message });
-
   }
-
 });
 
-
 app.post('/api/testimonials', requireAuth, async (req, res) => {
-
   try {
-
     const count = await Testimonial.countDocuments();
-
-    const testimonial = new Testimonial({
-      ...req.body,
-      order: count
-    });
-
+    const testimonial = new Testimonial({ ...req.body, order: count });
     await testimonial.save();
-
     res.status(201).json(testimonial);
-
   } catch (err) {
-
     res.status(400).json({ error: err.message });
-
   }
+});
 
+app.put('/api/testimonials/:id', requireAuth, async (req, res) => {
+  try {
+    const testimonial = await Testimonial.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!testimonial) return res.status(404).json({ error: 'Not found' });
+    res.json(testimonial);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/testimonials/:id', requireAuth, async (req, res) => {
+  try {
+    await Testimonial.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/testimonials/reset', requireAuth, async (req, res) => {
+  try {
+    await Testimonial.deleteMany({});
+    const defaults = [
+      { name: 'Priya & Arjun', occasion: 'Wedding Invitation', rating: 5, description: 'Absolutely stunning! Our guests were amazed by the digital invitation. The 3D effects and music made it so special.', emoji: '💍', order: 0 },
+      { name: 'Sneha & Rahul', occasion: 'Engagement Ceremony', rating: 5, description: 'The team understood our vision perfectly. The invitation was elegant and received so many compliments.', emoji: '💐', order: 1 },
+      { name: 'Lakshmi Family', occasion: 'Housewarming Ceremony', rating: 5, description: 'Beautiful design for our griha pravesham. Traditional yet modern, exactly what we wanted!', emoji: '🏡', order: 2 },
+      { name: 'Ananya & Vikram', occasion: 'Baby Shower Invitation', rating: 5, description: 'The cutest baby shower invitation! Loved the animations and the pastel theme. Truly magical.', emoji: '🍼', order: 3 },
+    ];
+    const created = await Testimonial.insertMany(defaults);
+    res.json(created);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
 // ─────────────────────────────────────────────────────────
-// CONTACT FORM
+// CONTACT MESSAGES
 // ─────────────────────────────────────────────────────────
 
 app.post('/api/messages', async (req, res) => {
-
   try {
-
     const message = new ContactMessage(req.body);
-
     await message.save();
-
     sendInquiryAlert(message);
-
     res.status(201).json(message);
-
   } catch (err) {
-
     res.status(400).json({ error: err.message });
-
   }
+});
 
+app.get('/api/messages', requireAuth, async (req, res) => {
+  try {
+    const messages = await ContactMessage.find().sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/messages/:id', requireAuth, async (req, res) => {
+  try {
+    await ContactMessage.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/messages/:id/read', requireAuth, async (req, res) => {
+  try {
+    const msg = await ContactMessage.findByIdAndUpdate(req.params.id, { read: true }, { new: true });
+    if (!msg) return res.status(404).json({ error: 'Not found' });
+    res.json(msg);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/messages', requireAuth, async (req, res) => {
+  try {
+    await ContactMessage.deleteMany({});
+    res.json({ message: 'All messages deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
@@ -440,22 +555,52 @@ app.post('/api/messages', async (req, res) => {
 // SHOWCASE ROUTES
 // ─────────────────────────────────────────────────────────
 
-app.get('/api/showcases/:category', async (req, res) => {
-
+app.get('/api/showcases', requireAuth, async (req, res) => {
   try {
-
-    const sc = await Showcase
-      .find({ category: req.params.category })
-      .sort({ order: 1 });
-
-    res.json(sc);
-
+    const showcases = await Showcase.find().sort({ order: 1 });
+    res.json(showcases);
   } catch (err) {
-
     res.status(500).json({ error: err.message });
-
   }
+});
 
+app.get('/api/showcases/:category', async (req, res) => {
+  try {
+    const sc = await Showcase.find({ category: req.params.category }).sort({ order: 1 });
+    res.json(sc);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/showcases', requireAuth, async (req, res) => {
+  try {
+    const count = await Showcase.countDocuments({ category: req.body.category });
+    const showcase = new Showcase({ ...req.body, order: count });
+    await showcase.save();
+    res.status(201).json(showcase);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/showcases/:id', requireAuth, async (req, res) => {
+  try {
+    const showcase = await Showcase.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!showcase) return res.status(404).json({ error: 'Not found' });
+    res.json(showcase);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/showcases/:id', requireAuth, async (req, res) => {
+  try {
+    await Showcase.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 
