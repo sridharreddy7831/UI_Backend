@@ -15,21 +15,26 @@ const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_in_production';
 
 // ─── CORS Configuration ────────────────────────────────────────────────────
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : ['http://localhost:5173', 'http://localhost:5174'];
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://uthsavinvites.vercel.app"
+];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, Postman, etc.)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
         }
-        return callback(new Error('Not allowed by CORS'));
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+// Preflight options handler
+app.options("*", cors());
 
 app.use(express.json({ limit: '10mb' }));
 
