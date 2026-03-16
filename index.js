@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const Testimonial = require('./models/Testimonial');
 const ContactMessage = require('./models/ContactMessage');
@@ -12,28 +14,47 @@ const Showcase = require('./models/Showcase');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || 'change_this_in_production';
 
+// 🔒 SECURITY: Enforce JWT_SECRET from environment (REQUIRED)
+if (!process.env.JWT_SECRET) {
+  console.error('❌ CRITICAL: JWT_SECRET environment variable is REQUIRED');
+  console.error('Set JWT_SECRET=your_secret_key before starting the server');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// 🔒 SECURITY: Enforce MONGO_URI from environment (REQUIRED)
+if (!process.env.MONGO_URI) {
+  console.error('❌ CRITICAL: MONGO_URI environment variable is REQUIRED');
+  process.exit(1);
+}
+
+
+// 🔒 SECURITY: Helmet - Add security headers
+app.use(helmet());
 
 // ─────────────────────────────────────────────────────────
 // CORS CONFIGURATION
 // ─────────────────────────────────────────────────────────
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://uthsavinvites.vercel.app"
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ["http://localhost:5173", "https://uthsavinvites.vercel.app"];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin && process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
-    return callback(null, false);
+    if (origin && allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS not allowed'));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  maxAge: 3600
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -89,28 +110,42 @@ const sendInquiryAlert = async (msg) => {
 
 
 // ─────────────────────────────────────────────────────────
-// JWT AUTH MIDDLEWARE
+// RATE LIMITING & AUTH MIDDLEWARE
 // ─────────────────────────────────────────────────────────
 
-const requireAuth = (req, res, next) => {
+// 🔒 SECURITY: Rate limiting for login attempts
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: 'Too many login attempts. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => process.env.NODE_ENV === 'development'
+});
 
+// 🔒 SECURITY: JWT AUTH MIDDLEWARE
+const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer '))
-    return res.status(401).json({ error: 'Unauthorized — no token provided' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ 
+      error: 'Unauthorized',
+      code: 'NO_TOKEN'
+    });
+  }
 
   const token = authHeader.split(' ')[1];
 
   try {
-
     const decoded = jwt.verify(token, JWT_SECRET);
     req.admin = decoded;
     next();
-
   } catch (err) {
-
-    return res.status(401).json({ error: 'Unauthorized — invalid or expired token' });
-
+    const statusCode = err.name === 'TokenExpiredError' ? 401 : 401;
+    return res.status(statusCode).json({ 
+      error: 'Unauthorized',
+      code: err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN'
+    });
   }
 };
 
@@ -147,30 +182,61 @@ app.get("/api/health", (req, res) => {
 // AUTH ROUTES
 // ─────────────────────────────────────────────────────────
 
-app.post('/api/auth/login', async (req, res) => {
-
+// 🔒 POST /api/auth/login — with rate limiting and secure error handling
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password)
-    return res.status(400).json({ error: 'Email and password required' });
+  if (!email || !password) {
+    return res.status(400).json({ 
+      error: 'Email and password required',
+      code: 'MISSING_CREDENTIALS'
+    });
+  }
+
+  if (typeof email !== 'string' || email.length > 254) {
+    return res.status(400).json({ 
+      error: 'Invalid email format',
+      code: 'INVALID_EMAIL'
+    });
+  }
 
   try {
+    const admin = await AdminUser.findOne({ 
+      email: email.toLowerCase().trim() 
+    });
 
-    const admin = await AdminUser.findOne({ email: email.toLowerCase().trim() });
-
-    if (!admin)
-      return res.status(401).json({ error: 'Invalid email or password' });
+    // 🔒 SECURE: Same error for non-existent vs wrong password (prevents user enumeration)
+    if (!admin) {
+      console.warn(`⚠️ Login attempt for non-existent user: ${email}`);
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        code: 'AUTH_FAILED'
+      });
+    }
 
     const valid = await admin.comparePassword(password);
 
-    if (!valid)
-      return res.status(401).json({ error: 'Invalid email or password' });
+    if (!valid) {
+      console.warn(`⚠️ Failed login attempt for user: ${email}`);
+      return res.status(401).json({ 
+        error: 'Invalid credentials',
+        code: 'AUTH_FAILED'
+      });
+    }
 
+    // 🔒 SECURE: Token expires in 7 days
     const token = jwt.sign(
-      { id: admin._id, email: admin.email, name: admin.name },
+      { 
+        id: admin._id, 
+        email: admin.email, 
+        name: admin.name,
+        iat: Math.floor(Date.now() / 1000)
+      },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+
+    console.log(`✅ Successful login: ${admin.email}`);
 
     res.json({
       token,
@@ -182,30 +248,102 @@ app.post('/api/auth/login', async (req, res) => {
     });
 
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
-
+    console.error('❌ Login error:', err.message);
+    res.status(500).json({ 
+      error: 'Authentication service error',
+      code: 'SERVER_ERROR'
+    });
   }
 });
 
 
 app.get('/api/auth/me', requireAuth, async (req, res) => {
-
   try {
+    const admin = await AdminUser.findById(req.admin.id)
+      .select('-password')
+      .lean();
 
-    const admin = await AdminUser.findById(req.admin.id).select('-password');
-
-    if (!admin)
-      return res.status(404).json({ error: 'Admin not found' });
+    if (!admin) {
+      return res.status(404).json({ 
+        error: 'Admin not found',
+        code: 'ADMIN_NOT_FOUND'
+      });
+    }
 
     res.json({ admin });
-
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
-
+    console.error('❌ Error fetching admin:', err.message);
+    res.status(500).json({ 
+      error: 'Server error',
+      code: 'SERVER_ERROR'
+    });
   }
+});
 
+// 🔒 POST /api/auth/register — Create new admin (protected, super-admin only)
+app.post('/api/auth/register', requireAuth, async (req, res) => {
+  try {
+    // 🔒 SECURE: Only super admin can create new admins
+    const isSuperAdmin = process.env.SUPER_ADMIN_EMAIL && 
+                         req.admin.email === process.env.SUPER_ADMIN_EMAIL;
+    
+    if (!isSuperAdmin) {
+      console.warn(`❌ Unauthorized registration attempt by: ${req.admin.email}`);
+      return res.status(403).json({ 
+        error: 'Forbidden',
+        code: 'INSUFFICIENT_PERMISSIONS'
+      });
+    }
+
+    const { email, password, name } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'Email and password required',
+        code: 'MISSING_FIELDS'
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        error: 'Password must be at least 8 characters',
+        code: 'WEAK_PASSWORD'
+      });
+    }
+
+    // Check if admin already exists
+    const exists = await AdminUser.findOne({ email: email.toLowerCase().trim() });
+    if (exists) {
+      return res.status(409).json({ 
+        error: 'Admin with this email already exists',
+        code: 'EMAIL_EXISTS'
+      });
+    }
+
+    // Create new admin
+    const newAdmin = await AdminUser.create({
+      email: email.toLowerCase().trim(),
+      password,
+      name: name || 'Admin'
+    });
+
+    console.log(`✅ New admin created: ${newAdmin.email} by ${req.admin.email}`);
+
+    res.status(201).json({
+      admin: {
+        id: newAdmin._id,
+        email: newAdmin.email,
+        name: newAdmin.name
+      }
+    });
+  } catch (err) {
+    console.error('❌ Registration error:', err.message);
+    res.status(500).json({ 
+      error: 'Server error',
+      code: 'SERVER_ERROR'
+    });
+  }
 });
 
 
