@@ -50,14 +50,9 @@ console.log(`🌐 CORS Allowed Origins: ${allowedOrigins.join(', ')}`);
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin in development (mobile apps, curl, Postman)
+    // Allow requests with no origin (e.g. curl, Postman, server-to-server, Render health checks)
     if (!origin) {
-      if (process.env.NODE_ENV === 'development') {
-        return callback(null, true);
-      }
-      // In production, log and reject requests without origin
-      console.warn('⚠️ Request rejected: No origin header (possible CORS issue)');
-      return callback(new Error('CORS not allowed - origin required'));
+      return callback(null, true);
     }
     
     // Check if origin is in allowed list
