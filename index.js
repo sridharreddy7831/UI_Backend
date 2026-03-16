@@ -43,7 +43,9 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   : [
       "http://localhost:5173",
       "http://localhost:5174",
-      "https://uthsavinvites.vercel.app"
+      "https://uthsavinvites.vercel.app",
+      "https://uthsavinvites.in",
+      "https://www.uthsavinvites.in"
     ];
 
 console.log(`🌐 CORS Allowed Origins: ${allowedOrigins.join(', ')}`);
