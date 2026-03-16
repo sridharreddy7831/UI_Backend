@@ -38,15 +38,17 @@ app.use(helmet());
 // ─────────────────────────────────────────────────────────
 
 // 🔒 SECURITY: Build allowed origins from environment or defaults
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://uthsavinvites.vercel.app",
+  "https://uthsavinvites.in",
+  "https://www.uthsavinvites.in"
+];
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "https://uthsavinvites.vercel.app",
-      "https://uthsavinvites.in",
-      "https://www.uthsavinvites.in"
-    ];
+  ? [...new Set([...process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()), ...defaultOrigins])]
+  : defaultOrigins;
 
 console.log(`🌐 CORS Allowed Origins: ${allowedOrigins.join(', ')}`);
 
