@@ -382,6 +382,19 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+// GET category by slug (public)
+app.get('/api/categories/:slug', async (req, res, next) => {
+  try {
+    // Avoid intercepting the seed route
+    if (req.params.slug === 'seed') return next();
+    const category = await Category.findOne({ slug: req.params.slug });
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json(category);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST create category (admin)
 app.post('/api/categories', requireAuth, async (req, res) => {
   try {

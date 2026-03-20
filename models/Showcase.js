@@ -4,14 +4,6 @@ const ShowcaseSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: [
-            'wedding-invitations',
-            'housewarming-invitations',
-            'birthday-invitations',
-            'baby-shower-invitations',
-            'engagement-invitations',
-            'naming-ceremony'
-        ],
         index: true
     },
     name: {
