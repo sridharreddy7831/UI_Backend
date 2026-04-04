@@ -17,7 +17,7 @@ const ShowcaseSchema = new mongoose.Schema({
     },
     image: {
         type: String, // Base64 or URL
-        required: true
+        required: false
     },
     link: {
         type: String,

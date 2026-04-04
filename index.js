@@ -8,6 +8,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
+const path = require('path');
 
 // 🔒 SECURITY: Escape user-controlled strings before injecting into HTML contexts
 const escapeHtml = (str) =>
@@ -26,6 +28,9 @@ const Category = require('./models/Category');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// Serve local uploads if Cloudinary is not configured
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 🔒 SECURITY: Enforce JWT_SECRET from environment (REQUIRED)
 if (!process.env.JWT_SECRET) {
@@ -185,29 +190,49 @@ if (cloudinaryConfigured) {
   console.warn('⚠️  Cloudinary not configured — set CLOUDINARY_* env vars to enable image uploads');
 }
 
-// POST /api/uploads/image — upload a showcase image to Cloudinary
+// POST /api/uploads/image — upload a showcase image to Cloudinary or local storage
 app.post('/api/uploads/image', requireAuth, uploadMiddleware.single('image'), async (req, res) => {
-  if (!cloudinaryConfigured) {
-    return res.status(501).json({
-      error: 'Image storage not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.',
-      code: 'CLOUDINARY_NOT_CONFIGURED'
-    });
-  }
   if (!req.file) {
     return res.status(400).json({ error: 'No image file provided', code: 'NO_FILE' });
   }
-  try {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'uthsav/showcases', resource_type: 'image' },
-        (error, result) => { if (error) reject(error); else resolve(result); }
-      );
-      stream.end(req.file.buffer);
-    });
-    res.json({ url: result.secure_url, publicId: result.public_id });
-  } catch (err) {
-    console.error('❌ Cloudinary upload failed:', err.message);
-    res.status(500).json({ error: 'Image upload failed. Please try again.', code: 'UPLOAD_FAILED' });
+
+  if (cloudinaryConfigured) {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'uthsav/showcases', resource_type: 'image' },
+          (error, result) => { if (error) reject(error); else resolve(result); }
+        );
+        stream.end(req.file.buffer);
+      });
+      res.json({ url: result.secure_url, publicId: result.public_id });
+    } catch (err) {
+      console.error('❌ Cloudinary upload failed:', err.message);
+      res.status(500).json({ error: 'Image upload failed. Please try again.', code: 'UPLOAD_FAILED' });
+    }
+  } else {
+    // Local File Storage Fallback
+    try {
+      const uploadDir = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      const fileName = `img_${Date.now()}_${Math.round(Math.random() * 1E9)}${path.extname(req.file.originalname) || '.jpg'}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      fs.writeFileSync(filePath, req.file.buffer);
+      
+      const protocol = req.protocol;
+      const host = req.get('host');
+      const url = `${protocol}://${host}/uploads/${fileName}`;
+      
+      console.log(`✅ Image uploaded locally: ${fileName}`);
+      res.json({ url: url, publicId: fileName });
+    } catch (err) {
+      console.error('❌ Local upload failed:', err.message);
+      res.status(500).json({ error: 'Image upload failed locally. Please try again.', code: 'UPLOAD_FAILED' });
+    }
   }
 });
 
@@ -770,11 +795,11 @@ app.post('/api/showcases', requireAuth, async (req, res) => {
   try {
     // 🔒 FIX: Whitelist fields — prevent mass assignment
     const { name, description, image, link, category } = req.body;
-    if (!name || !description || !image || !category) {
-      return res.status(400).json({ error: 'name, description, image, and category are required', code: 'MISSING_FIELDS' });
+    if (!name || !description || !category) {
+      return res.status(400).json({ error: 'name, description, and category are required', code: 'MISSING_FIELDS' });
     }
     // 🔒 FIX: Reject Base64 blobs — use /api/uploads/image to get a Cloudinary URL first
-    if (image.startsWith('data:')) {
+    if (image && image.startsWith('data:')) {
       return res.status(400).json({
         error: 'Base64 images are not accepted. Upload via POST /api/uploads/image first to get a URL.',
         code: 'BASE64_NOT_ALLOWED'
