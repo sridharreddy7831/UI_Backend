@@ -517,6 +517,27 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+// PATCH reorder categories (admin)
+app.patch('/api/categories/reorder', requireAuth, async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return res.status(400).json({ error: 'orderedIds array is required' });
+    }
+    const bulkOps = orderedIds.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { $set: { order: index } }
+      }
+    }));
+    await Category.bulkWrite(bulkOps);
+    const categories = await Category.find().sort({ order: 1 });
+    res.json(categories);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // GET category by slug (public)
 app.get('/api/categories/:slug', async (req, res, next) => {
   try {
@@ -534,12 +555,12 @@ app.get('/api/categories/:slug', async (req, res, next) => {
 app.post('/api/categories', requireAuth, async (req, res) => {
   try {
     // 🔒 FIX: Whitelist fields — prevent mass assignment attacks
-    const { title, slug, image, heroImage, subtitle, description } = req.body;
+    const { title, slug, image, heroImage, subtitle, description, comingSoon } = req.body;
     if (!title || !slug || !image) {
       return res.status(400).json({ error: 'title, slug, and image are required', code: 'MISSING_FIELDS' });
     }
     const count = await Category.countDocuments();
-    const category = new Category({ title, slug, image, heroImage, subtitle, description, order: count });
+    const category = new Category({ title, slug, image, heroImage, subtitle, description, comingSoon, order: count });
     await category.save();
     res.status(201).json(category);
   } catch (err) {
@@ -550,11 +571,17 @@ app.post('/api/categories', requireAuth, async (req, res) => {
 // PUT update category (admin)
 app.put('/api/categories/:id', requireAuth, async (req, res) => {
   try {
-    // 🔒 FIX: Whitelist update fields
-    const { title, slug, image, heroImage, subtitle, description, visible } = req.body;
+    // 🔒 FIX: Whitelist update fields — only include fields actually sent in the request
+    const allowedFields = ['title', 'slug', 'image', 'heroImage', 'subtitle', 'description', 'visible', 'comingSoon'];
+    const updateData = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    }
     const category = await Category.findByIdAndUpdate(
       req.params.id,
-      { title, slug, image, heroImage, subtitle, description, visible },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!category) return res.status(404).json({ error: 'Category not found' });
@@ -875,6 +902,12 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Server error', code: 'SERVER_ERROR' });
   }
 });
+
+// ─────────────────────────────────────────────────────────
+// RSVP ROUTES
+// ─────────────────────────────────────────────────────────
+const rsvpRoutes = require('./src/rsvp');
+app.use('/rsvp', rsvpRoutes);
 
 // ─────────────────────────────────────────────────────────
 // 404 CATCH-ALL & GLOBAL ERROR HANDLER

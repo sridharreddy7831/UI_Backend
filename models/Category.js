@@ -36,6 +36,10 @@ const CategorySchema = new mongoose.Schema({
     visible: {
         type: Boolean,
         default: true
+    },
+    comingSoon: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 
